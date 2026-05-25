@@ -1,82 +1,138 @@
-import { getStore } from '@netlify/blobs';
-
-function escapeHtml(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function html(statusCode, body, cache = 'public, max-age=60') {
+function html(statusCode, body) {
   return {
     statusCode,
     headers: {
-      'content-type': 'text/html; charset=utf-8',
-      'cache-control': cache
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=300"
     },
     body
   };
 }
 
+function escapeHtml(str) {
+  return String(str || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function cleanVideoId(value) {
+  return String(value || "")
+    .trim()
+    .split("?")[0]
+    .split("&")[0]
+    .replace(/[^A-Za-z0-9_-]/g, "");
+}
+
 export async function handler(event) {
-  const rawCode = (event.path.split('/').filter(Boolean).pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (!rawCode) return html(404, '<h1>Link não encontrado</h1>');
+  const rawPath = event.path || "";
+  const parts = rawPath.split("/").filter(Boolean);
+  const code = cleanVideoId(parts[1] || parts[0] || "");
 
-  const store = getStore('stellari-linkops-links');
-  const data = await store.get(rawCode, { type: 'json' }).catch(() => null);
-
-  if (!data || !data.videoId) {
-    return html(404, `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link não encontrado</title></head><body style="font-family:Arial;background:#06080d;color:#fff;padding:40px"><h1>Link não encontrado</h1><p>Este código ainda não existe na Stellari LinkOps.</p><a style="color:#60a5fa" href="/">Voltar</a></body></html>`, 'no-store');
+  if (!code) {
+    return html(404, "<h1>Link inválido</h1>");
   }
 
-  const videoId = data.videoId;
-  const title = escapeHtml(data.title || 'Assista no YouTube');
-  const description = escapeHtml(data.description || 'Link inteligente gerado pela Stellari LinkOps.');
-  const base = `${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host}`;
-  const canonical = `${base}/l/${rawCode}`;
-  const image = `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+  const videoId = code;
+  const title = "Assista à reflexão no YouTube";
+  const description = "Link inteligente gerado pela Stellari LinkOps.";
+  const image = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   const youtubeWeb = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
   const youtubeApp = `vnd.youtube://${encodeURIComponent(videoId)}`;
 
-  return html(200, `<!doctype html>
+  const page = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>
-  <meta name="description" content="${description}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+
   <meta property="og:type" content="website">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image" content="${image}">
-  <meta property="og:url" content="${canonical}">
+  <meta property="og:url" content="${escapeHtml(event.rawUrl || "")}">
+
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image" content="${image}">
+
   <style>
-    body{margin:0;min-height:100vh;background:#06080d;color:#fff;font-family:Inter,Arial,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;padding:22px}
-    .card{max-width:520px;background:linear-gradient(145deg,#101828,#06080d);border:1px solid rgba(96,165,250,.25);border-radius:24px;padding:24px;box-shadow:0 25px 70px rgba(0,0,0,.45)}
-    img{width:100%;border-radius:18px;margin-bottom:18px;background:#111827}
-    h1{font-size:24px;margin:0 0 10px}.muted{color:#b8c4d6;line-height:1.45}.btn{display:inline-block;margin-top:18px;background:#ff0033;color:#fff;padding:14px 20px;border-radius:14px;text-decoration:none;font-weight:800}.brand{margin-top:18px;color:#6ea8ff;font-size:12px;letter-spacing:.18em;text-transform:uppercase}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #05070d;
+      color: #fff;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+    .box {
+      max-width: 480px;
+      background: #0b1220;
+      border: 1px solid #1e3a5f;
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: 0 0 35px rgba(59, 130, 246, 0.18);
+    }
+    img {
+      width: 100%;
+      border-radius: 16px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 10px;
+    }
+    p {
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    a {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 14px 20px;
+      border-radius: 14px;
+      background: #2563eb;
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .small {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <img src="${image}" alt="Prévia do vídeo">
-    <h1>${title}</h1>
-    <p class="muted">Abrindo no YouTube. Se não abrir automaticamente, toque no botão abaixo.</p>
-    <a class="btn" href="${youtubeWeb}" target="_blank" rel="noopener">Abrir no YouTube</a>
-    <div class="brand">STELLARI LINKOPS</div>
-  </main>
+  <div class="box">
+    <img src="${image}" alt="Thumbnail do vídeo">
+    <h1>Abrindo no YouTube...</h1>
+    <p>Se o vídeo não abrir automaticamente, toque no botão abaixo.</p>
+    <a href="${youtubeWeb}" target="_blank" rel="noopener">Abrir vídeo no YouTube</a>
+    <div class="small">STELLARI PRODUÇÕES SOLUÇÕES DIGITAIS</div>
+  </div>
+
   <script>
-    const app = ${JSON.stringify(youtubeApp)};
-    const web = ${JSON.stringify(youtubeWeb)};
-    setTimeout(() => { window.location.href = app; }, 250);
-    setTimeout(() => { window.location.href = web; }, 1800);
+    setTimeout(function () {
+      window.location.href = "${youtubeApp}";
+    }, 400);
+
+    setTimeout(function () {
+      window.location.href = "${youtubeWeb}";
+    }, 1800);
   </script>
 </body>
-</html>`);
+</html>`;
+
+  return html(200, page);
 }
