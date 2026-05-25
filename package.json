@@ -1,0 +1,16 @@
+{
+  "name": "stellari-linkops-v1",
+  "version": "1.0.0",
+  "private": true,
+  "description": "STELLARI LinkOps - smart links com deep link e Open Graph dinâmico",
+  "scripts": {
+    "build": "echo 'Static build ready'",
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.38.1"
+  }
+}
