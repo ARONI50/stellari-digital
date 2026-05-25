@@ -2,6 +2,7 @@
   "name": "stellari-linkops-v1",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "STELLARI LinkOps - smart links com deep link e Open Graph dinâmico",
   "scripts": {
     "build": "echo 'Static build ready'",
